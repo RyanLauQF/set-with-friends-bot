@@ -1,9 +1,9 @@
 import random
 
-COLOURS = ["red", "purple", "green"]
-SHAPES = ["oval", "squiggle", "diamond"]
+COLOURS = ['red', 'purple', 'green']
+SHAPES = ['oval', 'squiggle', 'diamond']
 NUMBERS = [1, 2, 3]
-SHADING = ["solid", "striped", "outline"]
+SHADING = ['solid', 'striped', 'outline']
 
 
 class Card:
