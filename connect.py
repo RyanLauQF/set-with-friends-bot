@@ -1,12 +1,11 @@
 import main
-import math
 import time
 import re
-import pyautogui
 
 from card import Card
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -19,22 +18,38 @@ COLOUR_DICT = {
 }
 
 # buffer time to wait for cards to be replaced
-CARD_REPLACEMENT_TIME = 0.85
+CARD_REPLACEMENT_TIME = 0.75
 
 
 def link_to_game():
+    # create Chrome browser using selenium for bot to access website
     chrome_options = Options()
     chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--start-maximised")
     driver = webdriver.Chrome(options=chrome_options)
 
+    # prompt for game url
     game_url = input("Enter game URL: ")
     driver.get(game_url)
+
+    # enter game lobby
+    while True:
+        user_start = input("Start Bot?: ")
+        if user_start != 'y':
+            continue
+        else:
+            print("BOT STARTED!")
+            break
 
     # wait for card table to load completely
     wait = WebDriverWait(driver, 10)
     wait.until(EC.presence_of_element_located((By.XPATH, '''//*[@id="root"]/div/div/div[2]/div[2]''')))
 
+    # clicker used to select cards in browser
+    clicker = ActionChains(driver)
+
     game_end_counter = 0
+
     while True:
         # wait for card to be replaced
         time.sleep(CARD_REPLACEMENT_TIME)
@@ -45,6 +60,9 @@ def link_to_game():
         # class cards are located in on html page
         divs = soup.find_all("div", {"class": "MuiPaper-root MuiPaper-elevation1 MuiPaper-rounded"})
 
+        # class name of the cards displayed
+        class_name = None
+
         # get all cards that are currently shown on the screen
         cards = []
         for card_box in divs[1].contents[1:]:
@@ -52,14 +70,20 @@ def link_to_game():
 
             # check opacity set to 1
             if regex_info[3] == '1':
+
+                # get class name of cards displayed
+                if class_name is None:
+                    class_name = ' '.join(card_box.contents[0]['class'])
+
+                # process html information into card object
                 card = process_html_info(str(card_box.contents[0]))
-                cards.append([card, int(regex_info[0]), int(regex_info[1])])
+                cards.append(card)
 
-        # sort the cards for position on screen
-        cards = sorted(cards, key=lambda k: [k[2], k[1]])
+        # get web elements of all cards
+        elements = driver.find_elements(By.XPATH, "//*[@class='" + class_name + "']")
 
-        # convert to dictionary matching cards to position
-        card_dict = {cards[i][0]: i for i in range(len(cards))}
+        # since order is preserved we can zip both together
+        card_dict = dict(zip(cards, elements))
 
         # find set amongst cards shown
         set_found = main.find_set(list(card_dict.keys()))
@@ -72,17 +96,17 @@ def link_to_game():
             game_end_counter += 1
             continue
 
-        # get positions of sets on the screen
-        positions = [card_dict[card] for card in set_found]
+        # log sets found
+        print("Found Set!")
+        for card in set_found:
+            print(card)
+        print()
 
-        # DEBUG - PRINT CARD SET
-        # print(positions)
-        # for each in set_found:
-        #     print(each)
-        # print()
+        # get web elements of sets on the screen
+        web_element = [card_dict[card] for card in set_found]
 
         # click the cards
-        click_set(positions)
+        click_set(web_element, clicker)
 
         # reset counter as a set has been found
         game_end_counter = 0
@@ -120,22 +144,12 @@ def process_html_info(div):
     return Card(colour, shape, num, shading, 0)
 
 
-# Dimensions of screen requirement: width=2880, height=1800
-def click_set(positions):
-    top_left_x = 1040
-    top_left_y = 350
-
-    x_offset = 400
-    y_offset = 250
-
-    for pos in positions:
-        row = math.floor(pos / 3)
-        col = math.floor(pos % 3)
-        x = top_left_x + (col * x_offset)
-        y = top_left_y + (row * y_offset)
-
-        pyautogui.click(x, y)
+# uses selenium ActionChains to click on card web elements
+def click_set(web_element, clicker):
+    for ele in web_element:
+        clicker.move_to_element(ele).click().perform()
         time.sleep(0.01)
+
 
 # DEBUG
 # info = '''position: absolute; transform: translate(328px, 108px) rotate(0deg); opacity: 1; visibility: visible;'''
