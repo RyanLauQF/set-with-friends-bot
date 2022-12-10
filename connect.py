@@ -5,7 +5,7 @@ import re
 from card import Card
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.common import TimeoutException
+from selenium.common import TimeoutException, InvalidArgumentException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.wait import WebDriverWait
@@ -35,8 +35,18 @@ def link_to_game():
     print("BOT STARTED!")
 
     # prompt for game url
-    game_url = input("Enter game URL: ")
-    driver.get(game_url)
+    while True:
+        try:
+            game_url = input("Enter game URL: ")
+            if 'setwithfriends.com/room' in game_url:
+                driver.get(game_url)
+            else:
+                continue
+        except InvalidArgumentException:
+            print("That's not a URL!")
+            continue
+        else:
+            break
 
     # clicker used to select cards in browser
     clicker = ActionChains(driver)
@@ -148,9 +158,3 @@ def click_set(web_element, clicker):
     for ele in web_element:
         time.sleep(CLICK_DELAY)
         clicker.move_to_element(ele).click().perform()
-
-
-# DEBUG
-# info = '''position: absolute; transform: translate(328px, 108px) rotate(0deg); opacity: 1; visibility: visible;'''
-# d = '''<div class="jss35 jss36" style="width: 146px; height: 88px; margin: 5px; border-radius: 5px; background: initial; transition: width 0.5s ease 0s, height 0.5s ease 0s;"><svg class="jss34" height="64" style="transition: width 0.5s ease 0s, height 0.5s ease 0s;" viewbox="0 0 200 400" width="32"><use fill="#800080" href="#squiggle" mask=""></use><use fill="none" href="#squiggle" stroke="#800080" stroke-width="18"></use></svg><svg class="jss34" height="64" style="transition: width 0.5s ease 0s, height 0.5s ease 0s;" viewbox="0 0 200 400" width="32"><use fill="#800080" href="#squiggle" mask=""></use><use fill="none" href="#squiggle" stroke="#800080" stroke-width="18"></use></svg></div>'''
-# process_html_info(d)
