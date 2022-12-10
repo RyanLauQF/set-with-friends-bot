@@ -5,6 +5,7 @@ import re
 from card import Card
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.common import TimeoutException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.wait import WebDriverWait
@@ -18,72 +19,70 @@ COLOUR_DICT = {
 }
 
 # buffer time to wait for cards to be replaced
-CARD_REPLACEMENT_TIME = 0.75
+CARD_REPLACEMENT_TIME = 0.5
+
+# buffer time for clicks to register
+CLICK_DELAY = 0.1
 
 
 def link_to_game():
+
     # create Chrome browser using selenium for bot to access website
     chrome_options = Options()
     chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--start-maximised")
     driver = webdriver.Chrome(options=chrome_options)
+
+    print("BOT STARTED!")
 
     # prompt for game url
     game_url = input("Enter game URL: ")
     driver.get(game_url)
 
-    # enter game lobby
-    while True:
-        user_start = input("Start Bot?: ")
-        if user_start != 'y':
-            continue
-        else:
-            print("BOT STARTED!")
-            break
-
-    # wait for card table to load completely
-    wait = WebDriverWait(driver, 10)
-    wait.until(EC.presence_of_element_located((By.XPATH, '''//*[@id="root"]/div/div/div[2]/div[2]''')))
-
     # clicker used to select cards in browser
     clicker = ActionChains(driver)
+
+    # wait for browser to load page and click away "enter" pop-up
+    time.sleep(3)
+    enter_button = driver.find_element(By.ID, 'root')
+    clicker.move_to_element_with_offset(enter_button, 300, 200).click().perform()
+
+    print("ENTERED GAME LOBBY!\n")
+
+    # wait max 5 minutes for game to start
+    try:
+        wait = WebDriverWait(driver, 300)
+
+        # wait for card table to completely load
+        wait.until(EC.presence_of_element_located((By.XPATH, '''//*[@id="root"]/div/div/div[2]/div[2]''')))
+
+    except TimeoutException:
+        print("This game is taking forever to start... I'm going to sleep... zZz")
+        driver.quit()
+        return
 
     game_end_counter = 0
 
     while True:
         # wait for card to be replaced
-        time.sleep(CARD_REPLACEMENT_TIME)
+        # time.sleep(CARD_REPLACEMENT_TIME)
 
-        # get entire html of swf page
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        # scrape from class cards are located in on html page
+        elements = driver.find_elements(By.XPATH, "//*[@class='MuiPaper-root MuiPaper-elevation1 MuiPaper-rounded']")
 
-        # class cards are located in on html page
-        divs = soup.find_all("div", {"class": "MuiPaper-root MuiPaper-elevation1 MuiPaper-rounded"})
-
-        # class name of the cards displayed
-        class_name = None
+        # get all html elements of cards on page
+        all_html_cards = elements[1].find_elements(By.XPATH, "*")[1:]
 
         # get all cards that are currently shown on the screen
-        cards = []
-        for card_box in divs[1].contents[1:]:
-            regex_info = re.findall(r'[0-9]+', card_box['style'])
+        card_dict = {}
+        for card_element in all_html_cards:
+            regex_info = re.findall(r'[0-9]+', card_element.get_attribute('style'))
 
             # check opacity set to 1
             if regex_info[3] == '1':
 
-                # get class name of cards displayed
-                if class_name is None:
-                    class_name = ' '.join(card_box.contents[0]['class'])
-
                 # process html information into card object
-                card = process_html_info(str(card_box.contents[0]))
-                cards.append(card)
-
-        # get web elements of all cards
-        elements = driver.find_elements(By.XPATH, "//*[@class='" + class_name + "']")
-
-        # since order is preserved we can zip both together
-        card_dict = dict(zip(cards, elements))
+                card = process_html_info(str(card_element.get_attribute('innerHTML')))
+                card_dict[card] = card_element
 
         # find set amongst cards shown
         set_found = main.find_set(list(card_dict.keys()))
@@ -147,8 +146,8 @@ def process_html_info(div):
 # uses selenium ActionChains to click on card web elements
 def click_set(web_element, clicker):
     for ele in web_element:
+        time.sleep(CLICK_DELAY)
         clicker.move_to_element(ele).click().perform()
-        time.sleep(0.01)
 
 
 # DEBUG
