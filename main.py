@@ -1,6 +1,4 @@
-import sys
 import random
-import connect
 
 from card import Card
 
@@ -10,7 +8,7 @@ NUMBERS = [1, 2, 3]
 SHADING = ['solid', 'striped', 'outline']
 
 
-# runs a set with friends game simulation
+# runs a set game simulation
 def init_game():
     deck = []
     unique_id = 0
@@ -112,11 +110,10 @@ def generate_all_sets(combinations, curr_set, index, dealt_cards, length):
     return combinations
 
 
-def main():
-    # init_game()
-    connect.link_to_game()
-    sys.exit(0)
-
-
-if __name__ == "__main__":
-    main()
+# Set game simulation
+# def main():
+#     init_game()
+#
+#
+# if __name__ == "__main__":
+#     main()

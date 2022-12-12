@@ -1,6 +1,7 @@
 import main
 import time
 import re
+import logging
 
 from card import Card
 from bs4 import BeautifulSoup
@@ -25,28 +26,21 @@ CARD_REPLACEMENT_TIME = 0.5
 CLICK_DELAY = 0.1
 
 
-def link_to_game():
+def link_to_game(updater, game_url):
 
     # create Chrome browser using selenium for bot to access website
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     driver = webdriver.Chrome(options=chrome_options)
 
-    print("BOT STARTED!")
+    logging.info("LINKING TO GAME...")
 
-    # prompt for game url
-    while True:
-        try:
-            game_url = input("Enter game URL: ")
-            if 'setwithfriends.com/room' in game_url:
-                driver.get(game_url)
-            else:
-                continue
-        except InvalidArgumentException:
-            print("That's not a URL!")
-            continue
-        else:
-            break
+    # try to enter game lobby
+    try:
+        driver.get(game_url)
+    except InvalidArgumentException:
+        updater.message.reply_text("I can't join this game lobby!")
+        return
 
     # clicker used to select cards in browser
     clicker = ActionChains(driver)
@@ -56,7 +50,8 @@ def link_to_game():
     enter_button = driver.find_element(By.ID, 'root')
     clicker.move_to_element_with_offset(enter_button, 300, 200).click().perform()
 
-    print("ENTERED GAME LOBBY!\n")
+    logging.info("ENTERED GAME LOBBY")
+    updater.message.reply_text("I've entered the lobby!")
 
     # wait max 5 minutes for game to start
     try:
@@ -66,7 +61,8 @@ def link_to_game():
         wait.until(EC.presence_of_element_located((By.XPATH, '''//*[@id="root"]/div/div/div[2]/div[2]''')))
 
     except TimeoutException:
-        print("This game is taking forever to start... I'm going to sleep... zZz")
+        logging.info("Timeout after 5 minutes")
+        updater.message.reply_text("This game is taking forever to start... I'm going to sleep... zZz")
         driver.quit()
         return
 
@@ -100,16 +96,17 @@ def link_to_game():
         # game ends when no sets are found 3 times consecutively
         if not set_found:
             if game_end_counter == 3:
-                print("GAME ENDED!")
+                logging.info("GAME ENDED")
+                updater.message.reply_text("Good game! Let's play again!")
                 break
             game_end_counter += 1
             continue
 
         # log sets found
-        print("Found Set!")
+        set_to_string = "Found Set!\n"
         for card in set_found:
-            print(card)
-        print()
+            set_to_string += (card.__str__() + "\n")
+        logging.info(set_to_string)
 
         # get web elements of sets on the screen
         web_element = [card_dict[card] for card in set_found]
