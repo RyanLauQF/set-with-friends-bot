@@ -1,6 +1,7 @@
 import main
 import time
 import re
+import os
 import logging
 
 from card import Card
@@ -30,8 +31,11 @@ def link_to_game(updater, game_url):
 
     # create Chrome browser using selenium for bot to access website
     chrome_options = Options()
+    chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN")
     chrome_options.add_argument("--headless")
-    driver = webdriver.Chrome(options=chrome_options)
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    driver = webdriver.Chrome(executable_path=os.environ.get("CHROMEDRIVER_PATH"), options=chrome_options)
 
     logging.info("LINKING TO GAME...")
 
