@@ -29,16 +29,17 @@ def help_command(update, context):
     /start - starts the bot
     /help - bot information
     
-You can send a link into the chat to invite me to a game of Set!
+Send a game lobby link into the chat to invite me to a game of Set!
 
-- Visit https://setwithfriends.com/
-- Click on "Create A Game" or "New Private Game"
-- Send the lobby link to me!
-i.e. https://setwithfriends.com/room/wired-homely-pocket
+*How To Use:*
+1.   Visit https://setwithfriends.com/
+2.   Create a new game
+3.   Ensure "Normal" setting is selected
+4.   Send the lobby link to me!
     
 If I am not working properly... :(
 
-For bug related issues, report it under *issues* at https://github.com/RyanLauQF/set-with-friends-bot
+For bug related issues, report it under *issues* [here](https://github.com/RyanLauQF/set-with-friends-bot)
     
 Do not use me to cheat!
     '''
